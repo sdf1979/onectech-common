@@ -1,9 +1,15 @@
 package onectechcommon
 
-import "reflect"
+import (
+	"encoding/json"
+	"reflect"
+	"strings"
+)
 
 type metrics struct {
-	allMaps []map[string]*storage
+	allMaps  []map[string]*storage
+	nameMaps []string
+	indexMap map[string]int
 
 	DbLock         map[string]*storage `json:"dbLock"`
 	CallCount      map[string]*storage `json:"callCount"`
@@ -18,18 +24,28 @@ type metrics struct {
 	BadAlloc       map[string]*storage `json:"badAlloc"`
 }
 
+type metricItem struct {
+	KEY   string `json:"KEY"`
+	PARAM string `json:"PARAM"`
+	VALUE int64  `json:"VALUE"`
+}
+
 func newMetrics() *metrics {
 	m := &metrics{}
 	v := reflect.ValueOf(m).Elem()
 	t := v.Type()
 	mapType := reflect.TypeOf(map[string]*storage{})
 	var maps []map[string]*storage
+	var names []string
+	indexes := make(map[string]int)
 
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		fieldName := t.Field(i).Name
+		fieldType := t.Field(i)
 
-		if fieldName == "allMaps" {
+		switch fieldName {
+		case "allMaps", "nameMaps", "indexMap":
 			continue
 		}
 
@@ -39,10 +55,34 @@ func newMetrics() *metrics {
 			mp := field.Interface().(map[string]*storage)
 			m.add(mp, "Total", 0)
 			maps = append(maps, mp)
+
+			tag := fieldType.Tag.Get("json")
+			if tag == "" || tag == "-" {
+				tag = fieldName
+			} else {
+				if idx := strings.Index(tag, ","); idx != -1 {
+					tag = tag[:idx]
+				}
+			}
+			names = append(names, tag)
+
+			indexes[tag] = len(maps) - 1
 		}
 	}
 	m.allMaps = maps
+	m.nameMaps = names
+	m.indexMap = indexes
 	return m
+}
+
+func (m *metrics) getValue(key, param string) int64 {
+	index := m.indexMap[key]
+	return m.allMaps[index][param].value
+}
+
+func (m *metrics) setValue(key, param string, value int64) {
+	index := m.indexMap[key]
+	m.allMaps[index][param].value = value
 }
 
 func (m *metrics) add(store map[string]*storage, key string, value int64) {
@@ -60,4 +100,27 @@ func (m *metrics) clear() {
 			mMap[k].clear()
 		}
 	}
+}
+
+func (m *metrics) toJSON(zeroValues bool) ([]byte, error) {
+	var items []metricItem
+
+	for i, mp := range m.allMaps {
+		if i >= len(m.nameMaps) {
+			break
+		}
+		metricName := m.nameMaps[i]
+		for process, st := range mp {
+			val := st.value
+			if zeroValues {
+				val = 0
+			}
+			items = append(items, metricItem{
+				KEY:   metricName,
+				PARAM: process,
+				VALUE: val,
+			})
+		}
+	}
+	return json.Marshal(items)
 }

@@ -1,7 +1,6 @@
 package onectechcommon
 
 import (
-	"encoding/json"
 	"strconv"
 	"strings"
 	"sync"
@@ -35,25 +34,39 @@ func (ela *EventLogAggregator) AddEventLog(el *EventLog) {
 	}
 }
 
-func (ela EventLogAggregator) String() string {
-	ela.mu.RLock()
-	defer ela.mu.RUnlock()
+func (ela *EventLogAggregator) GetMetric(key, param string) int64 {
+	ela.mu.Lock()
+	defer ela.mu.Unlock()
 
-	b, err := ela.toJSON()
-	if err != nil {
-		return ""
-	}
+	value := ela.m.getValue(key, param)
+	ela.m.setValue(key, param, 0)
 
-	return string(b)
+	return value
 }
 
-func (ela *EventLogAggregator) GetValuesAndClear() string {
+func (ela *EventLogAggregator) GetDescriptionMetrics() string {
 	ela.mu.Lock()
 	defer ela.mu.Unlock()
 
 	var values string
 
-	b, err := ela.toJSON()
+	b, err := ela.toJSON(true)
+	if err != nil {
+		values = ""
+	}
+	values = string(b)
+	ela.clear()
+
+	return values
+}
+
+func (ela *EventLogAggregator) GetMetricsAndClear() string {
+	ela.mu.Lock()
+	defer ela.mu.Unlock()
+
+	var values string
+
+	b, err := ela.toJSON(false)
 	if err != nil {
 		values = ""
 	}
@@ -150,8 +163,8 @@ func (ela *EventLogAggregator) counterCall(el *EventLog) string {
 	}
 }
 
-func (ela *EventLogAggregator) toJSON() ([]byte, error) {
-	return json.Marshal(ela.m)
+func (ela *EventLogAggregator) toJSON(zeroValues bool) ([]byte, error) {
+	return ela.m.toJSON(zeroValues)
 }
 
 func (ela *EventLogAggregator) clear() {
