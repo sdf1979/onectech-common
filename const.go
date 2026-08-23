@@ -1,0 +1,24 @@
+package onectechcommon
+
+const (
+	RPHOST                      = "rphost"
+	EXCP                        = "EXCP"
+	CALL                        = "CALL"
+	PROCESS                     = "process"
+	P_PROCESS_NAME              = "p:processName"
+	EXCEPTION                   = "Exception"
+	DESCR                       = "Descr"
+	DATABASE_EXCEPTION          = "DataBaseException"
+	DB_LOCK_MSSQL               = "Lock request time out period exceeded"
+	DB_LOCK_POSTGRS             = "canceling statement due to lock timeout"
+	CPU_TIME                    = "CpuTime"
+	MEMORY_PEAK                 = "MemoryPeak"
+	IN_BYTES                    = "InBytes"
+	OUT_BYTES                   = "OutBytes"
+	SERVER_JOB_EXECUTOR_CONTEXT = "ServerJobExecutorContext"
+	TTIMEOUT                    = "TTIMEOUT"
+	TDEADLOCK                   = "TDEADLOCK"
+	DEBUG_CONTROL_CENTER        = "DebugControlCenter"
+	ADMIN_PROCESS               = "##AdminProcess##"
+	BAD_ALLOC                   = "bad_alloc"
+)
