@@ -50,7 +50,7 @@ func (ela *EventLogAggregator) GetMetrics() string {
 
 	var values string
 
-	b, err := ela.toJSON(true)
+	b, err := ela.toJSON()
 	if err != nil {
 		values = ""
 	}
@@ -139,6 +139,6 @@ func (ela *EventLogAggregator) counterCall(el *EventLog) string {
 	}
 }
 
-func (ela *EventLogAggregator) toJSON(zeroValues bool) ([]byte, error) {
-	return ela.m.toJSON(zeroValues)
+func (ela *EventLogAggregator) toJSON() ([]byte, error) {
+	return ela.m.toJSON()
 }

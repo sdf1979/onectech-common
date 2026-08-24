@@ -94,7 +94,7 @@ func (m *metrics) add(store map[string]*storage, key string, value int64) {
 	s.add(value)
 }
 
-func (m *metrics) toJSON(zeroValues bool) ([]byte, error) {
+func (m *metrics) toJSON() ([]byte, error) {
 	var items []metricItem
 
 	for i, mp := range m.allMaps {
@@ -103,14 +103,10 @@ func (m *metrics) toJSON(zeroValues bool) ([]byte, error) {
 		}
 		metricName := m.nameMaps[i]
 		for process, st := range mp {
-			val := st.value
-			if zeroValues {
-				val = 0
-			}
 			items = append(items, metricItem{
 				KEY:   metricName,
 				PARAM: process,
-				VALUE: val,
+				VALUE: st.value,
 			})
 		}
 	}
