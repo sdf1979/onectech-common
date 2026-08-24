@@ -2,12 +2,10 @@ package onectechcommon
 
 import (
 	"strconv"
-	"time"
 )
 
 type storage struct {
-	value      int64
-	lastAccess time.Time
+	value int64
 }
 
 func (s *storage) MarshalJSON() ([]byte, error) {
@@ -16,20 +14,8 @@ func (s *storage) MarshalJSON() ([]byte, error) {
 
 func (s *storage) add(value int64) {
 	s.value += value
-	if s.lastAccess.IsZero() {
-		s.lastAccess = time.Now()
-	}
 }
 
 func (s *storage) get() int64 {
-	if time.Since(s.lastAccess).Seconds() > 300 {
-		s.value = 0
-	}
-	s.lastAccess = time.Now()
 	return s.value
-}
-
-func (s *storage) clear() {
-	s.value = 0
-	s.lastAccess = time.Now()
 }

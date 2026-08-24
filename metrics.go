@@ -94,14 +94,6 @@ func (m *metrics) add(store map[string]*storage, key string, value int64) {
 	s.add(value)
 }
 
-func (m *metrics) clear() {
-	for _, mMap := range m.allMaps {
-		for k := range mMap {
-			mMap[k].clear()
-		}
-	}
-}
-
 func (m *metrics) toJSON(zeroValues bool) ([]byte, error) {
 	var items []metricItem
 
