@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -152,7 +151,6 @@ func (fw *FileWatcher) addRemoveFiles() error {
 	isRemove := now.Sub(nowHour).Seconds() >= 10
 	for key, fl := range fw.files {
 		if nowHour.After(fl.Time()) && isRemove {
-			fmt.Printf("delete tail file %s\n", fl.Name())
 			fl.Close()
 			delete(fw.files, key)
 		}
@@ -169,18 +167,17 @@ func (fw *FileWatcher) addRemoveFiles() error {
 			fl = NewFileLog(file)
 			size, err := fl.Size()
 			if err != nil {
-				log.Printf("failed to get size of file: %v", err)
+				defLog.Debugf("failed to get size of file: %v", err)
 				continue
 			}
 			if size > 3 && nowHour.Equal(fl.Time()) {
 				err := fl.Open()
 				if err != nil {
-					log.Printf("failed to find the last event in file %s: %v", fl.Name(), err)
+					defLog.Debugf("failed to find the last event in file %s: %v", fl.Name(), err)
 					continue
 				}
 				fl.SkipBom()
 				fw.files[file] = fl
-				fmt.Printf("init tail file %s\n", fl.Name())
 			}
 		}
 	}
@@ -195,7 +192,6 @@ func (fw *FileWatcher) getFiles() ([]string, error) {
 			return nil
 		}
 		if !d.IsDir() && strings.HasSuffix(d.Name(), ".log") {
-			//fmt.Println(path)
 			files = append(files, path)
 		}
 		return nil
@@ -218,13 +214,13 @@ func (fw *FileWatcher) initFiles() error {
 			fl = NewFileLog(file)
 			size, err := fl.Size()
 			if err != nil {
-				log.Printf("failed to get size of file: %v", err)
+				defLog.Debugf("failed to get size of file: %v", err)
 				continue
 			}
 			if size > 3 {
 				err := fl.Open()
 				if err != nil {
-					log.Printf("failed to open file: %v", err)
+					defLog.Debugf("failed to open file: %v", err)
 					fl.Close()
 					continue
 				}
@@ -249,25 +245,24 @@ func (fw *FileWatcher) initTailFiles() error {
 			fl = NewFileLog(file)
 			size, err := fl.Size()
 			if err != nil {
-				log.Printf("failed to get size of file: %v", err)
+				defLog.Debugf("failed to get size of file: %v", err)
 				continue
 			}
 			if size > 3 && nowHour.Equal(fl.Time()) {
 				fl.Open()
 				pos, err := fl.SeekLastEvent()
 				if err != nil {
-					log.Printf("failed to find the last event in file %s: %v", fl.Name(), err)
+					defLog.Debugf("failed to find the last event in file %s: %v", fl.Name(), err)
 					fl.Close()
 					continue
 				}
 				err = fl.SetPos(pos)
 				if err != nil {
-					log.Printf("failed to seek in file %s: %v", fl.Name(), err)
+					defLog.Debugf("failed to seek in file %s: %v", fl.Name(), err)
 					fl.Close()
 					continue
 				}
 				fw.files[file] = fl
-				fmt.Printf("init tail file %s\n", fl.Name())
 			}
 		}
 	}

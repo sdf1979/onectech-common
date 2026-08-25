@@ -49,6 +49,8 @@ func (f *FileLog) Open() error {
 		return err
 	}
 
+	defLog.Debugf("file open %s\n", f.file.Name())
+
 	f.event = make([]byte, 0, 64*1024)
 	f.reader = bufio.NewReaderSize(f.file, 64*1024)
 
@@ -60,6 +62,8 @@ func (f *FileLog) Close() error {
 		return nil
 	}
 	err := f.file.Close()
+
+	defLog.Debugf("file close %s\n", f.file.Name())
 
 	f.tm = time.Time{}
 	f.file = nil

@@ -39,7 +39,6 @@ func (ela *EventLogAggregator) GetMetric(key, param string) int64 {
 	defer ela.mu.Unlock()
 
 	value := ela.m.getValue(key, param)
-	ela.m.setValue(key, param, 0)
 
 	return value
 }
@@ -57,6 +56,28 @@ func (ela *EventLogAggregator) GetMetrics() string {
 	values = string(b)
 
 	return values
+}
+
+func (ela *EventLogAggregator) GetMetricsLLD() string {
+	ela.mu.Lock()
+	defer ela.mu.Unlock()
+
+	var values string
+
+	b, err := ela.toLLD()
+	if err != nil {
+		values = ""
+	}
+	values = string(b)
+
+	return values
+}
+
+func (ela *EventLogAggregator) GetKeys() []string {
+	ela.mu.Lock()
+	defer ela.mu.Unlock()
+
+	return ela.m.getKeys()
 }
 
 func (ela *EventLogAggregator) addExcp(el *EventLog) {
@@ -141,4 +162,8 @@ func (ela *EventLogAggregator) counterCall(el *EventLog) string {
 
 func (ela *EventLogAggregator) toJSON() ([]byte, error) {
 	return ela.m.toJSON()
+}
+
+func (ela *EventLogAggregator) toLLD() ([]byte, error) {
+	return ela.m.toLLD()
 }

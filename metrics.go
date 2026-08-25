@@ -30,6 +30,11 @@ type metricItem struct {
 	VALUE int64  `json:"VALUE"`
 }
 
+type metricItemLLD struct {
+	KEY   string `json:"{#KEY}"`
+	PARAM string `json:"{#PARAM}"`
+}
+
 func newMetrics() *metrics {
 	m := &metrics{}
 	v := reflect.ValueOf(m).Elem()
@@ -76,13 +81,19 @@ func newMetrics() *metrics {
 }
 
 func (m *metrics) getValue(key, param string) int64 {
-	index := m.indexMap[key]
-	return m.allMaps[index][param].value
-}
+	index, ok := m.indexMap[key]
+	if !ok {
+		defLog.Debugf("metric table index not found for key %s", key)
+		return 0
+	}
 
-func (m *metrics) setValue(key, param string, value int64) {
-	index := m.indexMap[key]
-	m.allMaps[index][param].value = value
+	value, okValue := m.allMaps[index][param]
+	if !okValue {
+		defLog.Debugf("no value found for the parameter %s", param)
+		return 0
+	}
+
+	return value.get()
 }
 
 func (m *metrics) add(store map[string]*storage, key string, value int64) {
@@ -111,4 +122,27 @@ func (m *metrics) toJSON() ([]byte, error) {
 		}
 	}
 	return json.Marshal(items)
+}
+
+func (m *metrics) toLLD() ([]byte, error) {
+	var items []metricItemLLD
+
+	for i, mp := range m.allMaps {
+		if i >= len(m.nameMaps) {
+			break
+		}
+		metricName := m.nameMaps[i]
+		for process, st := range mp {
+			_ = st
+			items = append(items, metricItemLLD{
+				KEY:   metricName,
+				PARAM: process,
+			})
+		}
+	}
+	return json.Marshal(items)
+}
+
+func (m *metrics) getKeys() []string {
+	return m.nameMaps
 }
