@@ -98,6 +98,9 @@ func (ela *EventLogAggregator) addExcp(el *EventLog) {
 
 			ela.m.add(ela.m.DbDeadlock, "Total", 1)
 			ela.m.add(ela.m.DbDeadlock, pProcessName, 1)
+		} else if strings.Contains(descr, CANNOT_INSERT_DUPLICATE_KEY_MSSQL) || strings.Contains(descr, TRANSACTION_ALREADY_HAS_ERRORS_RU) {
+			ela.m.add(ela.m.Excp, "Total", 1)
+			ela.m.add(ela.m.Excp, el.Value(P_PROCESS_NAME), 1)
 		}
 	case BAD_ALLOC:
 		pProcessName := el.Value(P_PROCESS_NAME)
@@ -106,6 +109,14 @@ func (ela *EventLogAggregator) addExcp(el *EventLog) {
 
 		ela.m.add(ela.m.BadAlloc, "Total", 1)
 		ela.m.add(ela.m.BadAlloc, pProcessName, 1)
+	default:
+		if el.Value(CONTEXT) != "" {
+			descr := el.Value(DESCR)
+			if strings.Contains(descr, FORM_UNAVAILABLE_FOR_USE_RU) {
+				ela.m.add(ela.m.Excp, "Total", 1)
+				ela.m.add(ela.m.Excp, el.Value(P_PROCESS_NAME), 1)
+			}
+		}
 	}
 }
 
