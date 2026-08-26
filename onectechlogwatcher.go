@@ -173,6 +173,7 @@ func (fw *FileWatcher) addRemoveFiles() error {
 			if size > 3 && nowHour.Equal(fl.Time()) {
 				err := fl.Open()
 				if err != nil {
+					fl.Close()
 					defLog.Debugf("failed to find the last event in file %s: %v", fl.Name(), err)
 					continue
 				}

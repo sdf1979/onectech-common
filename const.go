@@ -11,6 +11,7 @@ const (
 	DATABASE_EXCEPTION          = "DataBaseException"
 	DB_LOCK_MSSQL               = "Lock request time out period exceeded"
 	DB_LOCK_POSTGRS             = "canceling statement due to lock timeout"
+	DB_DEADLOCK_MSSQL           = "was deadlocked on lock resources with another process and has been chosen as the deadlock victim"
 	CPU_TIME                    = "CpuTime"
 	MEMORY_PEAK                 = "MemoryPeak"
 	IN_BYTES                    = "InBytes"

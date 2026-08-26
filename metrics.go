@@ -12,6 +12,7 @@ type metrics struct {
 	indexMap map[string]int
 
 	DbLock         map[string]*storage `json:"dbLock"`
+	DbDeadlock     map[string]*storage `json:"dbDeadlock"`
 	CallCount      map[string]*storage `json:"callCount"`
 	CallDuration   map[string]*storage `json:"callDuration"`
 	CallCpu        map[string]*storage `json:"callCpu"`
@@ -27,7 +28,7 @@ type metrics struct {
 type metricItem struct {
 	KEY   string `json:"KEY"`
 	PARAM string `json:"PARAM"`
-	VALUE int64  `json:"VALUE"`
+	VALUE uint64 `json:"VALUE"`
 }
 
 type metricItemLLD struct {
@@ -80,7 +81,7 @@ func newMetrics() *metrics {
 	return m
 }
 
-func (m *metrics) getValue(key, param string) int64 {
+func (m *metrics) getValue(key, param string) uint64 {
 	index, ok := m.indexMap[key]
 	if !ok {
 		defLog.Debugf("metric table index not found for key %s", key)
@@ -96,7 +97,7 @@ func (m *metrics) getValue(key, param string) int64 {
 	return value.get()
 }
 
-func (m *metrics) add(store map[string]*storage, key string, value int64) {
+func (m *metrics) add(store map[string]*storage, key string, value uint64) {
 	s := store[key]
 	if s == nil {
 		s = &storage{}
