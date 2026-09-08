@@ -2,6 +2,7 @@ package onectechcommon
 
 import (
 	"bytes"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -22,8 +23,9 @@ type EventLog struct {
 }
 
 func NewEvent(t time.Time, data []byte) *EventLog {
-	//Time
 	e := &EventLog{}
+
+	//Time
 	tm, _ := time.Parse("04:05.000000", string(data[:12]))
 	e.tm = time.Date(t.Year(), t.Month(), t.Day(),
 		t.Hour(), tm.Minute(), tm.Second(), tm.Nanosecond(),
@@ -89,6 +91,10 @@ func NewEvent(t time.Time, data []byte) *EventLog {
 	return e
 }
 
+func (e *EventLog) Time() time.Time {
+	return e.tm
+}
+
 func (e *EventLog) Name() string {
 	return e.name
 }
@@ -119,6 +125,31 @@ func (e *EventLog) IsDbLock() bool {
 		return true
 	}
 	return false
+}
+
+func (e *EventLog) CallContext() string {
+	if e.Name() == CALL && (e.Value(PROCESS) == RPHOST || e.Value(PROCESS) == RMNGR) {
+		switch e.Value(P_PROCESS_NAME) {
+		case "RegMngrCntxt", "DebugQueryTargets", "ServerJobExecutorContext", "":
+			return ""
+		}
+		switch {
+		case IsInteger(e.Value(METHOD)), e.Value(METHOD) == "Release":
+			return ""
+		}
+		switch e.Value(FUNC) {
+		case "Dynamic list search", "Background report", "WebSocket clients connection job", "Global search",
+			"DB copies notification background job":
+			return ""
+		}
+
+		context := e.Value(CONTEXT)
+		if context == "" {
+			context = fmt.Sprintf("%s.%s.%s", e.Value(FUNC), e.Value(MODULE), e.Value(METHOD))
+		}
+		return context
+	}
+	return ""
 }
 
 func (e EventLog) String() string {
@@ -159,7 +190,31 @@ func asciiToInt16(data []byte) int16 {
 }
 
 func findInEscapedString(data []byte, v byte) int {
-	stack := stackEscapedString{}
+	set := string([]byte{v, ',', '\r', '\n'})
+	inside := false
+	start := 0
+	for {
+		idx := bytes.IndexAny(data[start:], set)
+		if idx == -1 {
+			break
+		}
+		pos := start + idx
+		b := data[pos]
+		if b == v {
+			inside = !inside
+			start = pos + 1
+		} else {
+			if !inside {
+				return pos
+			}
+			start = pos + 1
+		}
+	}
+	return -1
+}
+
+/*func findInEscapedStringOld(data []byte, v byte, stack *stackEscapedString) int {
+	*stack = (*stack)[:0]
 	for idx := 0; idx < len(data); idx++ {
 		if data[idx] == v {
 			stack.Toggle(v)
@@ -168,4 +223,4 @@ func findInEscapedString(data []byte, v byte) int {
 		}
 	}
 	return -1
-}
+}*/

@@ -14,54 +14,59 @@ import (
 )
 
 type FileWatcher struct {
-	dir     string
-	out     chan<- *EventLog
-	threads int
-	isTail  bool
-	files   map[string]*FileLog
+	dir        string
+	out        chan *EventLog
+	threads    int
+	isTail     bool
+	files      map[string]*FileLog
+	totalBytes uint64
 }
 
-func NewFileWatcher(dir string, out chan<- *EventLog, threads int, isTail bool) *FileWatcher {
-	fw := &FileWatcher{}
-	fw.out = out
-	fw.dir = dir
-	fw.threads = threads
-	fw.isTail = isTail
-	fw.files = make(map[string]*FileLog)
-
-	return fw
-}
-
-func (fw *FileWatcher) CheckDir() error {
-	info, err := os.Stat(fw.dir)
-
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("directory does not exist:'%s'", fw.dir)
-		}
-		return fmt.Errorf("failed to stat path: %w", err)
+func NewFileWatcher(dir string, threads int, isTail bool) *FileWatcher {
+	return &FileWatcher{
+		dir:     dir,
+		threads: threads,
+		isTail:  isTail,
+		files:   make(map[string]*FileLog),
 	}
-	if !info.IsDir() {
-		return fmt.Errorf("path exists but is not a directory: '%s'", fw.dir)
-	}
-	return nil
 }
 
-func (fw *FileWatcher) Run(ctx context.Context) (int64, error) {
-	var totalBytes int64
+func (fw *FileWatcher) Run(ctx context.Context, chanBufferSize int) (<-chan *EventLog, error) {
 	var err error
+	if err = fw.checkDir(); err != nil {
+		return nil, err
+	}
 
 	if fw.isTail {
-		err = fw.tail(ctx)
+		err = fw.initTailFiles()
 	} else {
-		totalBytes, err = fw.run(ctx)
+		err = fw.initFiles()
 	}
-
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return totalBytes, nil
+	fw.totalBytes = 0
+	if fw.out == nil {
+		fw.out = make(chan *EventLog, chanBufferSize)
+	}
+
+	go func() {
+		defer fw.Close()
+		defer close(fw.out)
+
+		if fw.isTail {
+			err = fw.tail(ctx)
+		} else {
+			err = fw.run(ctx)
+		}
+
+		if err != nil {
+			defLog.Errf("file operation error: %v", err)
+		}
+	}()
+
+	return fw.out, nil
 }
 
 func (fw *FileWatcher) Close() {
@@ -70,40 +75,34 @@ func (fw *FileWatcher) Close() {
 	}
 }
 
-func (fw *FileWatcher) run(ctx context.Context) (int64, error) {
-	err := fw.initFiles()
-	if err != nil {
-		return 0, err
-	}
+func (fw *FileWatcher) TotalBytes() uint64 {
+	return fw.totalBytes
+}
 
+func (fw *FileWatcher) run(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(fw.threads)
-
-	var totalBytes int64
 
 	for _, fl := range fw.files {
 		g.Go(func() error {
 			n, err := fl.Read(ctx, fw.out, fw.isTail)
 			fl.Close()
 			if n > 0 {
-				atomic.AddInt64(&totalBytes, n)
+				atomic.AddUint64(&fw.totalBytes, uint64(n))
 			}
 			return err
 		})
 	}
 
 	if err := g.Wait(); err != nil {
-		return 0, err
+		return err
 	}
 
-	return totalBytes, nil
+	return nil
 }
 
 func (fw *FileWatcher) tail(ctx context.Context) error {
-	err := fw.initTailFiles()
-	if err != nil {
-		return err
-	}
+
 	lastUpdateFiles := time.Now()
 
 	for {
@@ -268,5 +267,20 @@ func (fw *FileWatcher) initTailFiles() error {
 		}
 	}
 
+	return nil
+}
+
+func (fw *FileWatcher) checkDir() error {
+	info, err := os.Stat(fw.dir)
+
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("directory does not exist:'%s'", fw.dir)
+		}
+		return fmt.Errorf("failed to stat path: %w", err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("path exists but is not a directory: '%s'", fw.dir)
+	}
 	return nil
 }
