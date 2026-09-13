@@ -5,6 +5,7 @@ type UpdateContext struct {
 	Duration   int64
 	MemoryPeak int64
 	CpuTime    int64
+	Rows       int64
 }
 
 type Aggregator interface {

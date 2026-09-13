@@ -4,6 +4,7 @@ go 1.26.4
 
 require (
 	github.com/DataDog/go-sqllexer v0.2.4
+	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/icza/backscanner v0.0.0-20241124160932-dff01ac50250
 	golang.org/x/sync v0.22.0
 	modernc.org/sqlite v1.57.0

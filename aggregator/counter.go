@@ -3,7 +3,7 @@ package aggregator
 import "fmt"
 
 type Counter struct {
-	Count int64
+	Count int64 `json:"Количество"`
 }
 
 func (c *Counter) Apply(ctx UpdateContext) {
@@ -25,10 +25,12 @@ func (c *Counter) String() string {
 func (C *Counter) Calculate(parent Aggregator) {}
 
 type DurationCounter struct {
-	Count           int64           `json:"Количество"`
-	Duration        duration        `json:"Длительность (сек)"`
-	DurationAvg     durationAvg     `json:"Длительность средняя (сек)"`
-	DurationPercent durationPercent `json:"Длительность (% от родителя)"`
+	Count           int64        `json:"Количество"`
+	Duration        duration     `json:"Время (сек)"`
+	DurationAvg     durationAvg  `json:"Время Avg (сек)"`
+	DurationPercent float64Prec2 `json:"Время (% группы)"`
+	Rows            int64        `json:"      Строк     "`
+	RowsAvg         float64Prec2 `json:" Строк Avg "`
 }
 
 func (c *DurationCounter) Apply(ctx UpdateContext) {
@@ -36,6 +38,7 @@ func (c *DurationCounter) Apply(ctx UpdateContext) {
 	c.Duration += duration(ctx.Duration)
 	c.DurationAvg.count += ctx.Count
 	c.DurationAvg.duration += ctx.Duration
+	c.Rows += ctx.Rows
 }
 
 func (c *DurationCounter) Clone() Aggregator {
@@ -52,6 +55,7 @@ func (c *DurationCounter) String() string {
 }
 
 func (c *DurationCounter) Calculate(parent Aggregator) {
+	c.RowsAvg = float64Prec2(c.Rows) / float64Prec2(c.Count)
 	if parent == nil {
 		c.DurationPercent = 100.0
 		return
@@ -61,16 +65,18 @@ func (c *DurationCounter) Calculate(parent Aggregator) {
 		c.DurationPercent = 0.0
 		return
 	}
-	c.DurationPercent = 100.0 * durationPercent(c.Duration) / durationPercent(p.Duration)
+	c.DurationPercent = 100.0 * float64Prec2(c.Duration) / float64Prec2(p.Duration)
 }
 
 type CallCounter struct {
-	Count           int64           `json:"Количество"`
-	Duration        duration        `json:"Длительность (сек)"`
-	DurationAvg     durationAvg     `json:"Длительность средняя (сек)"`
-	DurationPercent durationPercent `json:"Длительность (% от родителя)"`
-	MemoryPeak      int64           `json:"Памяти выделено (байт)"`
-	CpuTime         duration        `json:"Время процессора (сек)"`
+	Count           int64        `json:"Кол-во"`
+	Duration        duration     `json:"Время (сек)"`
+	DurationAvg     durationAvg  `json:"Время Avg (сек)"`
+	DurationPercent float64Prec2 `json:"Время (% группы)"`
+	CpuTime         duration     `json:"Время CPU (сек)"`
+	CpuTimeAvg      durationAvg  `json:"Время CPU Avg (сек)"`
+	CpuTimePercent  float64Prec2 `json:"Время CPU (% группы)"`
+	MemoryPeak      memoryMb     `json:"Память (Mb)"`
 }
 
 func (c *CallCounter) Apply(ctx UpdateContext) {
@@ -78,8 +84,10 @@ func (c *CallCounter) Apply(ctx UpdateContext) {
 	c.Duration += duration(ctx.Duration)
 	c.DurationAvg.count += ctx.Count
 	c.DurationAvg.duration += ctx.Duration
-	c.MemoryPeak += ctx.MemoryPeak
+	c.MemoryPeak += memoryMb(ctx.MemoryPeak)
 	c.CpuTime += duration(ctx.CpuTime)
+	c.CpuTimeAvg.count += ctx.Count
+	c.CpuTimeAvg.duration += ctx.Duration
 }
 
 func (c *CallCounter) Clone() Aggregator {
@@ -98,12 +106,15 @@ func (c *CallCounter) String() string {
 func (c *CallCounter) Calculate(parent Aggregator) {
 	if parent == nil {
 		c.DurationPercent = 100.0
+		c.CpuTimePercent = 100.0
 		return
 	}
 	p, ok := parent.(*CallCounter)
 	if !ok {
 		c.DurationPercent = 0.0
+		c.CpuTimePercent = 0.0
 		return
 	}
-	c.DurationPercent = 100.0 * durationPercent(c.Duration) / durationPercent(p.Duration)
+	c.DurationPercent = 100.0 * float64Prec2(c.Duration) / float64Prec2(p.Duration)
+	c.CpuTimePercent = 100.0 * float64Prec2(c.CpuTime) / float64Prec2(p.CpuTime)
 }

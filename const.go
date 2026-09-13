@@ -46,4 +46,8 @@ const (
 	SHARED                            = "Shared"
 	MODULE                            = "Module"
 	METHOD                            = "Method"
+	USR                               = "Usr"
+	SESSION_ID                        = "SessionID"
+	DEADLOCK_CONNECTION_INTERSWCTION  = "DeadlockConnectionIntersections"
+	RET_EXCP                          = "RetExcp"
 )

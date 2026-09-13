@@ -13,6 +13,12 @@ type keyValue struct {
 	Idx  int
 }
 
+type ThreadSessionKey struct {
+	OSThread   string
+	TConnectID string
+	SessionID  string
+}
+
 type EventLog struct {
 	tm           time.Time
 	name         string
@@ -129,27 +135,87 @@ func (e *EventLog) IsDbLock() bool {
 
 func (e *EventLog) CallContext() string {
 	if e.Name() == CALL && (e.Value(PROCESS) == RPHOST || e.Value(PROCESS) == RMNGR) {
-		switch e.Value(P_PROCESS_NAME) {
-		case "RegMngrCntxt", "DebugQueryTargets", "ServerJobExecutorContext", "":
-			return ""
-		}
-		switch {
-		case IsInteger(e.Value(METHOD)), e.Value(METHOD) == "Release":
-			return ""
-		}
-		switch e.Value(FUNC) {
-		case "Dynamic list search", "Background report", "WebSocket clients connection job", "Global search",
-			"DB copies notification background job":
-			return ""
-		}
-
 		context := e.Value(CONTEXT)
 		if context == "" {
 			context = fmt.Sprintf("%s.%s.%s", e.Value(FUNC), e.Value(MODULE), e.Value(METHOD))
 		}
+		if strings.HasSuffix(context, "..") || strings.HasPrefix(context, "..") {
+			return ""
+		}
 		return context
 	}
 	return ""
+}
+
+func (e *EventLog) Context() string {
+	return TrimQuotedString(e.Value(CONTEXT))
+}
+
+func (e *EventLog) Descr() string {
+	return TrimQuotedString(e.Value(DESCR))
+}
+
+func (e *EventLog) TdeadlockDims() string {
+	const marker = ".DIMS"
+
+	s := e.Value(DEADLOCK_CONNECTION_INTERSWCTION)
+	var b strings.Builder
+	b.Grow(64) // обычно хватает для двух имён
+
+	searchFrom := 0
+	found := 0
+
+	for found < 2 {
+		rel := strings.Index(s[searchFrom:], marker)
+		if rel < 0 {
+			break
+		}
+		pos := searchFrom + rel
+
+		// назад до первого пробела
+		start := 0
+		if sp := strings.LastIndexByte(s[:pos], ' '); sp >= 0 {
+			start = sp + 1
+		}
+
+		// вперед до второго пробела после ".DIMS"
+		afterMarker := pos + len(marker)
+
+		sp1Rel := strings.IndexByte(s[afterMarker:], ' ')
+		if sp1Rel < 0 {
+			break
+		}
+		sp1 := afterMarker + sp1Rel
+
+		var end int
+		if sp2Rel := strings.IndexByte(s[sp1+1:], ' '); sp2Rel >= 0 {
+			end = sp1 + 1 + sp2Rel
+		} else {
+			end = len(s)
+		}
+
+		if found > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(s[start:end])
+
+		found++
+		searchFrom = end
+	}
+
+	return b.String()
+}
+
+func (e *EventLog) ThreadSessionKey() ThreadSessionKey {
+	return ThreadSessionKey{OSThread: e.Value(OS_THREAD), TConnectID: e.Value(T_CONNECT_ID), SessionID: e.Value(SESSION_ID)}
+}
+
+func (e *EventLog) Int64Or(name string, def int64) int64 {
+	v, err := strconv.ParseInt(e.Value(name), 10, 64)
+	if err != nil {
+		return def
+	}
+	return v
 }
 
 func (e EventLog) String() string {

@@ -1,0 +1,114 @@
+.oct-table{
+  border-collapse:collapse;
+  width:100%;
+  table-layout:auto;             /* будет переключено на fixed в JS после замера */
+}
+.oct-table tr.oct-d0 > td { background-color:#ffffff; }
+.oct-table tr.oct-d1 > td { background-color:#e9e9e9; }
+.oct-table th,
+.oct-table td{
+  border:1px solid #b0b0b0;
+  vertical-align:top;
+  padding:4px 6px;
+}
+.oct-th{
+  background-color:#006B9E;
+  color:#fff;
+  padding:8px;
+  text-align:left;
+}
+.oct-th.oct-sortable{cursor:pointer;user-select:none}
+.oct-th.oct-sortable:hover{background-color:#0088c9}
+
+/* Стрелка сортировки: фиксированная ширина + центрирование,
+   чтобы ▲ и ▼ занимали одинаково много места.
+   .oct-arrow-off оставляет место, но делает стрелку невидимой. */
+.oct-arrow{
+  display:inline-block;
+  width:1em;
+  margin-left:4px;
+  text-align:center;
+  font-size:.8em;
+  line-height:1;
+  vertical-align:baseline;
+}
+.oct-arrow.oct-arrow-off{visibility:hidden}
+
+.oct-td{text-align:right}
+
+/* Колонка хеша: всегда одна строка, без переноса.
+   text-overflow:ellipsis — страховка на случай экстремально узкой
+   колонки; в реальности ширина фиксируется colgroup-ом после первого
+   рендера, и Base64-строка (11 символов) всегда влезает целиком. */
+.oct-td-hash{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.9em;
+}
+
+/* Содержимое ячейки: переносим и режем длинные токены, чтобы
+   после переключения на table-layout:fixed ничего не распирало. */
+.oct-cell{
+  max-height:8em;
+  overflow:hidden;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+.oct-cell:hover{overflow-y:auto}
+.oct-cell.oct-open{max-height:40em;overflow:auto}
+
+/* Скрытый по умолчанию полный текст */
+.oct-text-full{display:none}
+.oct-cell.oct-open .oct-text-short{display:none}
+.oct-cell.oct-open .oct-text-full{display:inline}
+
+/* Стрелка-переключатель: всегда в правом верхнем углу ячейки */
+.oct-toggle{
+  float:right;
+  margin:0 0 4px 6px;
+  cursor:pointer;
+  color:#f60;
+  font-size:.85em;
+  user-select:none;
+  line-height:1;
+}
+.oct-toggle::after{content:"▶"}
+.oct-cell.oct-open .oct-toggle::after{content:"▼"}
+
+/* Числовые колонки (агрегаторы, по которым идёт сортировка):
+   без переноса строк. Заголовки <th> это не затрагивает —
+   у них свой класс .oct-th. */
+.oct-td-nw{white-space:nowrap}
+.oct-td-nw .oct-cell{
+  white-space:nowrap;
+  overflow-wrap:normal;
+  word-break:normal;
+  text-overflow:ellipsis;   /* страховка на экстремально узкую колонку */
+}
+
+/* Панель управления перед таблицей (флажок ограничения выборки) */
+.oct-controls{
+  margin:8px 0 6px;
+  font:inherit;
+  font-size:14px;
+  color:#222;
+}
+.oct-filter{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  cursor:pointer;
+  user-select:none;
+}
+.oct-filter-toggle{
+  margin:0;
+  cursor:pointer;
+  accent-color:#006B9E;
+}
+.oct-filter-text{line-height:1.2}
+
+/* Строки вне вьюпорта браузер не верстает — сохраняем ускоритель */
+.oct-table tbody tr{content-visibility:auto;contain-intrinsic-size:24px 24px}
