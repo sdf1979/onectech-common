@@ -55,7 +55,9 @@ func (c *DurationCounter) String() string {
 }
 
 func (c *DurationCounter) Calculate(parent Aggregator) {
-	c.RowsAvg = float64Prec2(c.Rows) / float64Prec2(c.Count)
+	if c.Count != 0 {
+		c.RowsAvg = float64Prec2(c.Rows) / float64Prec2(c.Count)
+	}
 	if parent == nil {
 		c.DurationPercent = 100.0
 		return
@@ -65,7 +67,10 @@ func (c *DurationCounter) Calculate(parent Aggregator) {
 		c.DurationPercent = 0.0
 		return
 	}
-	c.DurationPercent = 100.0 * float64Prec2(c.Duration) / float64Prec2(p.Duration)
+
+	if p.Duration != 0 {
+		c.DurationPercent = 100.0 * float64Prec2(c.Duration) / float64Prec2(p.Duration)
+	}
 }
 
 type CallCounter struct {
@@ -115,6 +120,10 @@ func (c *CallCounter) Calculate(parent Aggregator) {
 		c.CpuTimePercent = 0.0
 		return
 	}
-	c.DurationPercent = 100.0 * float64Prec2(c.Duration) / float64Prec2(p.Duration)
-	c.CpuTimePercent = 100.0 * float64Prec2(c.CpuTime) / float64Prec2(p.CpuTime)
+	if p.Duration != 0 {
+		c.DurationPercent = 100.0 * float64Prec2(c.Duration) / float64Prec2(p.Duration)
+	}
+	if p.CpuTime != 0 {
+		c.CpuTimePercent = 100.0 * float64Prec2(c.CpuTime) / float64Prec2(p.CpuTime)
+	}
 }

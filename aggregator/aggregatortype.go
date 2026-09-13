@@ -14,7 +14,10 @@ type durationAvg struct {
 }
 
 func (d durationAvg) String() string {
-	return fmt.Sprintf("%.3f", (float64(d.duration)/float64(d.count))/1_000_000)
+	if d.count != 0 {
+		return fmt.Sprintf("%.3f", (float64(d.duration)/float64(d.count))/1_000_000)
+	}
+	return fmt.Sprintf("%.3f", float64(0))
 }
 
 type float64Prec2 float64

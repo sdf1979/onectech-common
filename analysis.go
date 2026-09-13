@@ -13,12 +13,12 @@ type dblockState struct {
 }
 
 type Analysis struct {
-	Ttimeout   *Node
-	Tdeadlock  *Node
-	Dblock     *Node
-	Call       *Node
-	DbQuery    *Node
-	Excp       *Node
+	ttimeout   *Node
+	tdeadlock  *Node
+	dblock     *Node
+	call       *Node
+	dbQuery    *Node
+	excp       *Node
 	normalizer *QueryNormalizer
 
 	timeStart time.Time
@@ -32,12 +32,12 @@ type Analysis struct {
 
 func NewAnalysis() *Analysis {
 	return &Analysis{
-		Ttimeout:  NewNode(&agg.Counter{}),
-		Tdeadlock: NewNode(&agg.Counter{}),
-		Dblock:    NewNode(&agg.Counter{}),
-		Call:      NewNode(&agg.CallCounter{}),
-		DbQuery:   NewNode(&agg.DurationCounter{}),
-		Excp:      NewNode(&agg.Counter{}),
+		ttimeout:  NewNode(&agg.Counter{}),
+		tdeadlock: NewNode(&agg.Counter{}),
+		dblock:    NewNode(&agg.Counter{}),
+		call:      NewNode(&agg.CallCounter{}),
+		dbQuery:   NewNode(&agg.DurationCounter{}),
+		excp:      NewNode(&agg.Counter{}),
 
 		normalizer: NewQueryNormalizer(),
 
@@ -55,6 +55,30 @@ func (a *Analysis) Process(out <-chan *EventLog) {
 		a.processEvent(key, event)
 	}
 	a.finalize()
+}
+
+func (a *Analysis) Ttimeout() *Node {
+	return a.ttimeout
+}
+
+func (a *Analysis) Tdeadlock() *Node {
+	return a.tdeadlock
+}
+
+func (a *Analysis) Dblock() *Node {
+	return a.dblock
+}
+
+func (a *Analysis) Call() *Node {
+	return a.call
+}
+
+func (a *Analysis) DbQuery() *Node {
+	return a.dbQuery
+}
+
+func (a *Analysis) Excp() *Node {
+	return a.excp
 }
 
 func (a *Analysis) TimeStart() time.Time {
@@ -216,7 +240,7 @@ func (a *Analysis) handleTtimeoutContext(key ThreadSessionKey, event *EventLog) 
 	regions := eventLock.Value(REGIONS)
 	context := event.Context()
 
-	a.Ttimeout.Insert([]string{ib, regions, context}, agg.UpdateContext{Count: 1})
+	a.ttimeout.Insert([]string{ib, regions, context}, agg.UpdateContext{Count: 1})
 	delete(a.ttimeoutUsrEvent, key)
 }
 
@@ -241,7 +265,7 @@ func (a *Analysis) handleTdeadlock(event *EventLog) {
 	dims := event.TdeadlockDims()
 	context := event.Context()
 
-	a.Tdeadlock.Insert([]string{ib, dims, context}, agg.UpdateContext{Count: 1})
+	a.tdeadlock.Insert([]string{ib, dims, context}, agg.UpdateContext{Count: 1})
 }
 
 func (a *Analysis) handleTlock(key ThreadSessionKey, event *EventLog) {
@@ -255,7 +279,7 @@ func (a *Analysis) handleTlock(key ThreadSessionKey, event *EventLog) {
 	context := event.Context()
 
 	if context != "" {
-		a.Ttimeout.Insert([]string{ib, regions, context}, agg.UpdateContext{Count: 1})
+		a.ttimeout.Insert([]string{ib, regions, context}, agg.UpdateContext{Count: 1})
 		delete(a.ttimeoutUsrEvent, key)
 	} else {
 		a.ttimeoutUsrEvent[key] = event
@@ -273,7 +297,7 @@ func (a *Analysis) handleDbQuery(key ThreadSessionKey, event *EventLog) {
 			rows := event.Int64Or(ROWS, 0)
 			rows += event.Int64Or(ROWS_AFFECTED, 0)
 
-			a.DbQuery.Insert(
+			a.dbQuery.Insert(
 				[]string{ib, digest, context},
 				agg.UpdateContext{
 					Count:    1,
@@ -290,7 +314,7 @@ func (a *Analysis) handleDbQuery(key ThreadSessionKey, event *EventLog) {
 }
 
 func (a *Analysis) insertException(ib, descr, context string) {
-	a.Excp.Insert([]string{ib, descr, context}, agg.UpdateContext{Count: 1})
+	a.excp.Insert([]string{ib, descr, context}, agg.UpdateContext{Count: 1})
 }
 
 func (a *Analysis) insertCall(ib, context string, src *EventLog) {
@@ -298,7 +322,7 @@ func (a *Analysis) insertCall(ib, context string, src *EventLog) {
 	memoryPeak := src.Int64Or(MEMORY_PEAK, 0)
 	cpuTime := src.Int64Or(CPU_TIME, 0)
 
-	a.Call.Insert(
+	a.call.Insert(
 		[]string{ib, context},
 		agg.UpdateContext{
 			Count:      1,
@@ -310,10 +334,10 @@ func (a *Analysis) insertCall(ib, context string, src *EventLog) {
 }
 
 func (a *Analysis) insertDblock(ib, retExcp, digest, context string) {
-	a.Dblock.Insert([]string{ib, retExcp, digest, context}, agg.UpdateContext{Count: 1})
+	a.dblock.Insert([]string{ib, retExcp, digest, context}, agg.UpdateContext{Count: 1})
 }
 
 func (a *Analysis) finalize() {
-	a.Call.Calculate()
-	a.DbQuery.Calculate()
+	a.call.Calculate()
+	a.dbQuery.Calculate()
 }
