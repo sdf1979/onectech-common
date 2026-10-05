@@ -294,8 +294,7 @@ func (a *Analysis) handleDbQuery(key ThreadSessionKey, event *EventLog) {
 			ib := event.Value(P_PROCESS_NAME)
 			digest := a.normalizer.Digest(sql, event.Name())
 			duration := event.Duration()
-			rows := event.Int64Or(ROWS, 0)
-			rows += event.Int64Or(ROWS_AFFECTED, 0)
+			rows := max(event.Int64Or(ROWS, 0), 0) + max(event.Int64Or(ROWS_AFFECTED, 0), 0)
 
 			a.dbQuery.Insert(
 				[]string{ib, digest, context},

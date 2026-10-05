@@ -13,7 +13,7 @@ func NewHTMLBuilder() *HTMLBuilder {
 	return &HTMLBuilder{}
 }
 
-func (h *HTMLBuilder) WriteLogo(text string, logo string) {
+func (h *HTMLBuilder) WriteLogo(text string, logo string, telefon string, site string) {
 	h.sb.WriteString(`<div style="display: flex; align-items: center; width: 100%;">`)
 
 	if text != "" {
@@ -22,8 +22,27 @@ func (h *HTMLBuilder) WriteLogo(text string, logo string) {
 		h.sb.WriteString(`</span>`)
 	}
 
-	h.sb.WriteString(`<span style="margin-left: auto;">`)
+	h.sb.WriteString(`<span style="margin-left: auto; display: flex; flex-direction: column; align-items: flex-end;">`)
 	h.sb.WriteString(logo)
+
+	if site != "" {
+		href := site
+		if !strings.HasPrefix(href, "http://") && !strings.HasPrefix(href, "https://") {
+			href = "https://" + href
+		}
+		h.sb.WriteString(`<a href="`)
+		h.sb.WriteString(href)
+		h.sb.WriteString(`" style="margin-top: 8px; font-size: 16px; font-weight: bold; color: #006B9E; text-decoration: none;">`)
+		h.sb.WriteString(site)
+		h.sb.WriteString(`</a>`)
+	}
+
+	if telefon != "" {
+		h.sb.WriteString(`<span style="margin-top: 8px; font-size: 16px; font-weight: bold; color: #006B9E;">`)
+		h.sb.WriteString(telefon)
+		h.sb.WriteString(`</span>`)
+	}
+
 	h.sb.WriteString(`</span>`)
 
 	h.sb.WriteString(`</div>`)
