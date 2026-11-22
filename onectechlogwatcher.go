@@ -85,8 +85,17 @@ func (fw *FileWatcher) run(ctx context.Context) error {
 
 	for _, fl := range fw.files {
 		g.Go(func() error {
+			if ctx.Err() != nil {
+				return nil
+			}
+			if err := fl.Open(); err != nil {
+				defLog.Debugf("failed to open file: %v", err)
+				return nil
+			}
+			defer fl.Close()
+			fl.SkipBom()
+
 			n, err := fl.Read(ctx, fw.out, fw.isTail)
-			fl.Close()
 			if n > 0 {
 				atomic.AddUint64(&fw.totalBytes, uint64(n))
 			}
@@ -218,13 +227,6 @@ func (fw *FileWatcher) initFiles() error {
 				continue
 			}
 			if size > 3 {
-				err := fl.Open()
-				if err != nil {
-					defLog.Debugf("failed to open file: %v", err)
-					fl.Close()
-					continue
-				}
-				fl.SkipBom()
 				fw.files[file] = fl
 			}
 		}

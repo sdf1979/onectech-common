@@ -260,7 +260,12 @@ func findInEscapedString(data []byte, v byte) int {
 	inside := false
 	start := 0
 	for {
-		idx := bytes.IndexAny(data[start:], set)
+		var idx int
+		if inside {
+			idx = bytes.IndexByte(data[start:], v)
+		} else {
+			idx = bytes.IndexAny(data[start:], set)
+		}
 		if idx == -1 {
 			break
 		}

@@ -133,13 +133,22 @@ func (f *FileLog) SetPos(pos int64) error {
 }
 
 func (f *FileLog) Read(ctx context.Context, out chan<- *EventLog, isTail bool) (int64, error) {
+	var line []byte
 	readBytes := int64(0)
 	for {
 		if ctx.Err() != nil {
 			f.Close()
 			return 0, nil
 		}
-		data, err := f.reader.ReadBytes('\n')
+		data, err := f.reader.ReadSlice('\n')
+		if err == bufio.ErrBufferFull {
+			line = append(line[:0], data...)
+			for err == bufio.ErrBufferFull {
+				data, err = f.reader.ReadSlice('\n')
+				line = append(line, data...)
+			}
+			data = line
+		}
 		readBytes += int64(len(data))
 		if err != nil {
 			if err == io.EOF {
