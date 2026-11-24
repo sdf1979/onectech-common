@@ -64,43 +64,48 @@ func GetNextWord(s, word string) string {
 
 func ReplacePrefixDigits(s string, prefix string) string {
 	var builder strings.Builder
-	builder.Grow(len(s)) // выделяем память под результирующую строку (не больше исходной)
+	copyFrom := 0
+	searchFrom := 0
 
-	n := len(s)
-	plen := len(prefix)
-	i := 0
+	for searchFrom < len(s) {
+		match := strings.Index(s[searchFrom:], prefix)
+		if match < 0 {
+			break
+		}
+		match += searchFrom
 
-	for i < n {
-		// Проверяем, начинается ли подстрока с prefix
-		if i+plen <= n && s[i:i+plen] == prefix {
-			// Если сразу после prefix стоит цифра – начинаем замену
-			if i+plen < n && s[i+plen] >= '0' && s[i+plen] <= '9' {
-				// Пропускаем все цифры
-				j := i + plen
-				for j < n && s[j] >= '0' && s[j] <= '9' {
-					j++
-				}
-
-				// Записываем префикс без цифр
-				builder.WriteString(prefix)
-
-				// Если после цифр идёт пробел – копируем его,
-				// чтобы не нарушить форматирование
-				if j < n && s[j] == ' ' {
-					builder.WriteByte(' ')
-					i = j + 1
-				} else {
-					i = j
-				}
-				continue
-			}
+		digitStart := match + len(prefix)
+		if digitStart == len(s) {
+			break
+		}
+		if s[digitStart] < '0' || s[digitStart] > '9' {
+			searchFrom = match + 1
+			continue
 		}
 
-		// Если совпадения нет – копируем текущий символ
-		builder.WriteByte(s[i])
-		i++
+		digitEnd := digitStart + 1
+		for digitEnd < len(s) && s[digitEnd] >= '0' && s[digitEnd] <= '9' {
+			digitEnd++
+		}
+
+		if copyFrom == 0 {
+			builder.Grow(len(s))
+		}
+		builder.WriteString(s[copyFrom:digitStart])
+		copyFrom = digitEnd
+		searchFrom = digitEnd
+
+		// Как и в исходной функции, сохраняем пробел после цифр
+		// и не используем его как начало следующего совпадения.
+		if searchFrom < len(s) && s[searchFrom] == ' ' {
+			searchFrom++
+		}
 	}
 
+	if copyFrom == 0 {
+		return s
+	}
+	builder.WriteString(s[copyFrom:])
 	return builder.String()
 }
 
