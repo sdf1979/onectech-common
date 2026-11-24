@@ -3,8 +3,6 @@ package onectechcommon
 import (
 	"strconv"
 	"strings"
-
-	"github.com/cespare/xxhash/v2"
 )
 
 func TrimQuotedString(s string) string {
@@ -94,29 +92,6 @@ func IsInteger(s string) bool {
 	s = strings.TrimSpace(s)
 	_, err := strconv.Atoi(s)
 	return err == nil
-}
-
-// HashString вычисляет 64-битный хеш последовательности байтов.
-//
-// Deprecated: используйте [HashOf] для вычисления хеша строки.
-func HashString(data []byte) uint64 {
-	return xxhash.Sum64(data)
-}
-
-// Uint64ToBase64 возвращает запись числа по основанию 64.
-//
-// Deprecated: используйте метод [Hash.String].
-func Uint64ToBase64(n uint64) string {
-	return Hash(n).String()
-}
-
-// Base64ToUint64 преобразует строку в системе счисления Base64 в uint64.
-// Возвращает ошибку при недопустимом символе или переполнении.
-//
-// Deprecated: используйте [ParseHash].
-func Base64ToUint64(s string) (uint64, error) {
-	h, err := ParseHash(s)
-	return uint64(h), err
 }
 
 func ContainsAny(s string, substrs ...string) bool {
