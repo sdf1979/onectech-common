@@ -71,7 +71,7 @@ func (n *Node) Hash() string {
 	if n.key == "" {
 		return ""
 	}
-	return Uint64ToBase64(HashString([]byte(n.key)))
+	return HashOf(n.key).String()
 }
 
 // Walk обходит дерево в pre-order: сначала узел, затем дети
